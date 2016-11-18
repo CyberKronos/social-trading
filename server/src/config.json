@@ -1,0 +1,11 @@
+{
+	"port": 8080,
+	"bodyLimit": "100kb",
+	"corsHeaders": ["Link"],
+	"firebase": {
+		"apiKey": "AIzaSyCv7bkSnkMe5D_0VlBas4XjGWJLHlCI_9o",
+    "authDomain": "social-trading.firebaseapp.com",
+    "databaseURL": "https://social-trading.firebaseio.com",
+    "storageBucket": "social-trading.appspot.com"
+	}
+}
