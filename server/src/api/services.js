@@ -39,11 +39,11 @@ module.exports = {
   },
 
   /**
-   * [createAccountQueues description]
+   * [createAccountKues description]
    * @param  {[type]} array [description]
    * @return {[type]}       [description]
    */
-  createAccountQueues: function(array) {
+  createAccountKues: function(array) {
     for (let i = 0; i < array.length; ++i) {
       let tradeGroup = array[i];
       for (let j = 0; j < tradeGroup.length; ++j) {
@@ -65,46 +65,96 @@ module.exports = {
         firebase.database().ref().update(updates);
 
         // Process in Kue
-        // this.setupAccountKue(accountKey, ranTradeGroup);
+        setupAccountKue(accountKey, ranTradeGroup);
+      }
+    }
+
+    /**
+     * [setupAccountKue description]
+     * @param  {[type]} accountKey     [description]
+     * @param  {[type]} tradeGroupTemp [description]
+     * @return {[type]}                [description]
+     */
+    function setupAccountKue(accountKey, ranTradeGroup) {
+      let queue = kue.createQueue();
+
+      // Queues each trade as a new job
+      // let jobTimeStart = -1200000;
+      let jobTimeStart = -60000;
+
+      for (let i = 0; i < ranTradeGroup.length; ++i) {
+        // Each job can only start 20 mins after the previous one
+        // jobTimeStart += 1200000;
+        jobTimeStart += 60000;
+
+        let job = queue.create(accountKey, {
+            title: 'Trading with: ' + ranTradeGroup[i],
+            tradeAccountKey: ranTradeGroup[i]
+        })
+        .delay(jobTimeStart) // 20 mins
+        .attempts(2)
+        .save(function(err) {
+           if( !err ) {
+             console.log( job.id );
+           }
+        });
       }
     }
   },
 
   /**
-   * [processAccountKue description]
-   * @param  {[type]} accountKey     [description]
-   * @param  {[type]} tradeGroupTemp [description]
-   * @return {[type]}                [description]
+   * [processKue description]
+   * @param  {[type]} accountKey [description]
+   * @return {[type]}            [description]
    */
-  setupAccountKue: function(accountKey, ranTradeGroup) {
-    console.log(accountKey);
+  processKue: function(accountKey) {
     let queue = kue.createQueue();
+    queue.process(accountKey, function(job, done){
+      // Execute job
+      // if(!isValidEmail(address)) {
+      //   return done(new Error('invalid to address'));
+      // }
 
-    // Queues each trade as a new job
-    let jobTimeStart = -1200000;
+      Promise.all([getAccountOAuth(accountKey), getAccountSpotKey(job.data.tradeAccountKey)])
+      .then(function(snapshot) {
+        let oauthData = snapshot[0].val();
+        let spotKey = snapshot[1].val();
+        if (spotKey != null) {
+          spotKey = Object.keys(spotKey);
+        }
 
-    for (let i = 0; i < ranTradeGroup.length; ++i) {
-      // Each job can only start 20 mins after the previous one
-      jobTimeStart += 1200000;
+        console.log(oauthData);
+        console.log(spotKey);
+        console.log("");
+        done();
+      });
+    });
 
-      let job = queue.create(accountKey, {
-          title: ranTradeGroup[i],
-          tradeAccountKey: ranTradeGroup[i]
-      })
-      .delay(jobTimeStart) // 20 mins
-      .attempts(2)
-      .save(function(err) {
-         if( !err ) { console.log( job.id ); }
+    /**
+     * [getAccountOAuth description]
+     * @param  {[type]} accountKey [description]
+     * @return {[type]}            [description]
+     */
+    function getAccountOAuth(accountKey) {
+      // Query account OAuth info for trade.
+      let accountRef = firebase.database().ref("/accounts/" + accountKey + "/accOAuth/");
+      return accountRef.once("value", function(snapshot) {
+        return snapshot;
       });
     }
-  },
 
-  processKue: function() {
-
-  },
-
-  executeJob: function() {
-
+    /**
+     * [getAccountSpots description]
+     * @param  {[type]} tradeAccountKey [description]
+     * @return {[type]}                 [description]
+     */
+    function getAccountSpotKey(tradeAccountKey) {
+      // Query trade account spots for trade.
+      let tradeAccountRef = firebase.database().ref("/accounts/" + tradeAccountKey + "/spots/");
+      return tradeAccountRef.once("value", function(snapshot) {
+        return snapshot;
+      });
+    }
   },
 
   /**

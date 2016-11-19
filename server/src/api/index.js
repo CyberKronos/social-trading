@@ -28,7 +28,7 @@ export default ({ config, db }) => {
 	// perhaps expose some API metadata at the root
 
 	/**
-	 * [accs description]
+	 * Creates Account Kues for Trading
 	 * @type {Array}
 	 */
   api.get('/createAccountQueues', (req, res) => {
@@ -42,22 +42,16 @@ export default ({ config, db }) => {
 
 			let randomizedAccs = services.shuffle(accs);
 			let groups = services.createTradeGroups(randomizedAccs);
-			services.createAccountQueues(groups);
-    });
+			services.createAccountKues(groups);
 
-    return res.json({ version });
+			return res.json({ 'status' : 'Account Kues have been created' });
+    });
   });
 
-  /**
-   * Process and starts trading the Kues
-   * @type GET
-   */
-  api.get('/processKueAndStartTrading', (req, res) => {
-		Promise.resolve(services.getActiveTrades())
-		.then(function(dataSnapshot) {
-			console.log(dataSnapshot.val());
-		});
+	api.get('/startTrading', (req, res) => {
+
 	});
+
   // api.get('/updateQueueAndStartTrading', (req, res) => {
   //   /*global Promise Promise:true*/
   //   Promise.all([getAllActiveTrades()])
@@ -191,13 +185,17 @@ export default ({ config, db }) => {
   //   });
 	// });
 
+	/**
+	 * Deletes all active trades for the day.
+	 * @type GET
+	 */
   api.get('/deleteAllActiveTrades', (req, res) => {
     Promise.all([getAllActiveTrades()])
     .then(function(snapshot) {
       const allTradeLists = snapshot[0].val();
 
       for (let accountKey in allTradeLists) {
-        firebase.database().ref('/activeTrades/' + accountKey).child('spots').remove();
+        firebase.database().ref('/activeTrades/' + accountKey).child('trades').remove();
       }
 
       return res.json({'status' : 'All active trades deleted'});
@@ -208,34 +206,34 @@ export default ({ config, db }) => {
    * Adds specified spot to the category trade list of accounts
    * @type POST
    */
-  api.post('/addSpotToTrades', (req, res) => {
-    const spotInfo = req.body;
-    const spotKey = spotInfo.spotKey;
-
-    Promise.all([getActiveTradesInCategory(spotInfo.accCategory)])
-    .then(function(snapshots) {
-      const tradeListsInCategory = snapshots[0].val();
-      if (tradeListsInCategory == null) {
-        // No accounts in category
-        return res.json({'status' : 'No active trading accounts in this category'});
-      } else {
-        // For each account in the category, add the new spot to its' trade list
-        for (let accountKey in tradeListsInCategory) {
-          if (tradeListsInCategory.hasOwnProperty(accountKey)) {
-            if (accountKey != spotInfo.accountKey) {
-              const updates = {};
-              spotInfo.approved = true;
-              updates['/spots/' + spotKey + '/approved'] = true;
-              updates['/activeTrades/' + accountKey + '/spots/' + spotKey] = spotInfo;
-              updates['/tradeHistory/' + accountKey + '/' + spotKey] = spotInfo;
-              firebase.database().ref().update(updates);
-            }
-          }
-        }
-        return res.json({'status' : 'Spot has been added to trades'});
-      }
-    });
-	});
+  // api.post('/addSpotToTrades', (req, res) => {
+  //   const spotInfo = req.body;
+  //   const spotKey = spotInfo.spotKey;
+	//
+  //   Promise.all([getActiveTradesInCategory(spotInfo.accCategory)])
+  //   .then(function(snapshots) {
+  //     const tradeListsInCategory = snapshots[0].val();
+  //     if (tradeListsInCategory == null) {
+  //       // No accounts in category
+  //       return res.json({'status' : 'No active trading accounts in this category'});
+  //     } else {
+  //       // For each account in the category, add the new spot to its' trade list
+  //       for (let accountKey in tradeListsInCategory) {
+  //         if (tradeListsInCategory.hasOwnProperty(accountKey)) {
+  //           if (accountKey != spotInfo.accountKey) {
+  //             const updates = {};
+  //             spotInfo.approved = true;
+  //             updates['/spots/' + spotKey + '/approved'] = true;
+  //             updates['/activeTrades/' + accountKey + '/spots/' + spotKey] = spotInfo;
+  //             updates['/tradeHistory/' + accountKey + '/' + spotKey] = spotInfo;
+  //             firebase.database().ref().update(updates);
+  //           }
+  //         }
+  //       }
+  //       return res.json({'status' : 'Spot has been added to trades'});
+  //     }
+  //   });
+	// });
 
 	return api;
 }
