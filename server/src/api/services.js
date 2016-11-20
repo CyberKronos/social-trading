@@ -39,6 +39,8 @@ module.exports = {
   },
 
   /**
+   * TODO: Modify function for category filter
+   *
    * [createAccountKues description]
    * @param  {[type]} array [description]
    * @return {[type]}       [description]
@@ -89,6 +91,7 @@ module.exports = {
 
         let job = queue.create(accountKey, {
             title: 'Trading with: ' + ranTradeGroup[i],
+            accountKey: accountKey,
             tradeAccountKey: ranTradeGroup[i]
         })
         .delay(jobTimeStart) // 20 mins
@@ -103,19 +106,22 @@ module.exports = {
   },
 
   /**
-   * [processKue description]
+   * [processAllKues description]
    * @param  {[type]} accountKey [description]
+   * @param  {[type]} numTrades  [description]
    * @return {[type]}            [description]
    */
-  processKue: function(accountKey) {
+  processAllKues: function(accountKey, numTrades) {
+    console.log(accountKey);
+    console.log(numTrades);
     let queue = kue.createQueue();
-    queue.process(accountKey, function(job, done){
+    queue.process(accountKey, numTrades, function(job, done){
       // Execute job
       // if(!isValidEmail(address)) {
       //   return done(new Error('invalid to address'));
       // }
 
-      Promise.all([getAccountOAuth(accountKey), getAccountSpotKey(job.data.tradeAccountKey)])
+      Promise.all([getAccountOAuth(job.data.accountKey), getAccountSpotKey(job.data.tradeAccountKey)])
       .then(function(snapshot) {
         let oauthData = snapshot[0].val();
         let spotKey = snapshot[1].val();
@@ -166,11 +172,11 @@ module.exports = {
     const ref = firebase.database().ref("activeTrades");
     if (category) {
       return ref.orderByChild("accCategory").equalTo(category).once("value", function(snapshot) {
-        return snapshot.val();
+        return snapshot;
       });
     } else {
       return ref.once("value", function(snapshot) {
-        return snapshot.val();
+        return snapshot;
       });
     }
   },
@@ -192,4 +198,25 @@ module.exports = {
       });
     }
   },
+
+  /**
+   * [getAccountTradeNum description]
+   * @param  {[type]} accountKey [description]
+   * @return {[type]}            [description]
+   */
+  getAccountTradeNum: function(accountKey) {
+    const ref = firebase.database().ref("activeTrades/" + accountKey + "/trades/");
+    return ref.once("value", function (snapshot) {
+      return snapshot;
+    });
+  },
+
+  /**
+   * [deleteAllActiveTrades description]
+   * @param  {[type]} accountKey [description]
+   * @return {[type]}            [description]
+   */
+  deleteAllActiveTrades: function(accountKey) {
+    return firebase.database().ref('/activeTrades/' + accountKey).child('trades').remove();
+  }
 };

@@ -1,0 +1,19 @@
+web:
+  image: 'cyberkronos/social-trading-dashboard:latest'
+  links:
+    - server
+  ports:
+    - '8080'
+  restart: on-failure
+server:
+  image: 'cyberkronos/social-trading-server:latest'
+  links:
+    - redis
+  ports:
+    - '8081'
+  restart: on-failure
+redis:
+  image: 'redis:latest'
+  ports:
+    - '6379'
+  restart: on-failure

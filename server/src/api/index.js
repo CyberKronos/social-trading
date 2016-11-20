@@ -4,8 +4,6 @@ import facets from './facets';
 import config from '../config.json';
 import services from './services'
 import firebase from 'firebase';
-// import Twit from 'twit';
-// import Queue from 'bull';
 
 // Firebase Init
 const firebaseConfig = {
@@ -26,7 +24,6 @@ export default ({ config, db }) => {
 	});
 
 	// perhaps expose some API metadata at the root
-
 	/**
 	 * Creates Account Kues for Trading
 	 * @type {Array}
@@ -48,9 +45,47 @@ export default ({ config, db }) => {
     });
   });
 
+	/**
+	 * [accountKey description]
+	 * @type {[type]}
+	 */
 	api.get('/startTrading', (req, res) => {
+		Promise.resolve(services.getActiveTrades())
+    .then(function(snapshot) {
+      snapshot.forEach(function(childSnapshot) {
+        let accountKey = childSnapshot.key;
 
+				Promise.resolve(services.getAccountTradeNum(accountKey))
+				.then(function(snapshot) {
+					let numTrades = snapshot.numChildren();
+
+					services.processAllKues(accountKey, numTrades);
+				});
+      });
+			return res.json({ 'status' : 'Trading has started!' });
+    });
 	});
+
+	/**
+	 * Deletes all active trades for the day.
+	 * @type GET
+	 */
+  api.get('/deleteAllActiveTrades', (req, res) => {
+    Promise.resolve(services.getActiveTrades())
+    .then(function(snapshot) {
+      const allTradeLists = snapshot.val();
+			
+      for (let accountKey in allTradeLists) {
+				services.deleteAllActiveTrades(accountKey);
+      }
+
+      return res.json({'status' : 'All active trades deleted'});
+    });
+  });
+
+	/**
+	 * TODO: Implement function for spot approval
+	 */
 
   // api.get('/updateQueueAndStartTrading', (req, res) => {
   //   /*global Promise Promise:true*/
@@ -184,23 +219,6 @@ export default ({ config, db }) => {
   //     return res.json({'status' : 'Trading has started!'});
   //   });
 	// });
-
-	/**
-	 * Deletes all active trades for the day.
-	 * @type GET
-	 */
-  api.get('/deleteAllActiveTrades', (req, res) => {
-    Promise.all([getAllActiveTrades()])
-    .then(function(snapshot) {
-      const allTradeLists = snapshot[0].val();
-
-      for (let accountKey in allTradeLists) {
-        firebase.database().ref('/activeTrades/' + accountKey).child('trades').remove();
-      }
-
-      return res.json({'status' : 'All active trades deleted'});
-    });
-  });
 
   /**
    * Adds specified spot to the category trade list of accounts
