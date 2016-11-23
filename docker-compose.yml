@@ -13,6 +13,18 @@ services:
       - front-tier
       - back-tier
 
+  client:
+    build: ./client
+    command: npm start
+    volumes:
+     - ./client:/usr/src/app
+    container_name: social-trading-client
+    ports:
+      - "3000:3000"
+    networks:
+      - front-tier
+      - back-tier
+
   server:
     build: ./server
     command: npm start

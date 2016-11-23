@@ -1,4 +1,11 @@
-web:
+client:
+  image: 'cyberkronos/social-trading-client:latest'
+  links:
+    - server
+  ports:
+    - '3000'
+  restart: on-failure
+dashboard:
   image: 'cyberkronos/social-trading-dashboard:latest'
   links:
     - server

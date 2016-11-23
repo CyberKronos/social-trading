@@ -3,9 +3,11 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import initializeDb from './db';
-import middleware from './middleware';
 import api from './api';
 import config from './config.json';
+import passport from 'passport';
+import session from 'express-session';
+import cookieParser from 'cookie-parser';
 
 let app = express();
 app.server = http.createServer(app);
@@ -14,16 +16,20 @@ app.server = http.createServer(app);
 app.use(cors({
 	exposedHeaders: config.corsHeaders
 }));
-
+app.use(cookieParser());
 app.use(bodyParser.json({
 	limit : config.bodyLimit
 }));
+app.use(session({
+  secret: 'keyboard cat',
+  resave: true,
+  saveUninitialized: true
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
 // connect to db
 initializeDb( db => {
-
-	// internal middleware
-	app.use(middleware({ config, db }));
 
 	// api router
 	app.use('/api', api({ config, db }));
