@@ -14,6 +14,7 @@ firebase.initializeApp(firebaseConfig);
 /**
  * Private Functions
  */
+
 /**
  * [setupAccountKue description]
  * @param  {[type]} accountKey     [description]

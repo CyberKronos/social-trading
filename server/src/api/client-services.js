@@ -15,7 +15,7 @@ passport.use(new TwitterStrategy({
     let userData = {
       token: token,
       tokenSecret: tokenSecret,
-      profileData: profile
+      profileData: profile._json
     };
     storeTwitterUser(userData);
     return done(userData);
@@ -40,6 +40,7 @@ passport.use(new InstagramStrategy({
 /**
  * Private Functions
  */
+
 /**
  * TODO: Implement function
  * [storeTwitterUser description]
