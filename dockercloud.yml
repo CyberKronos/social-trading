@@ -1,17 +1,3 @@
-client:
-  image: 'cyberkronos/social-trading-client:latest'
-  links:
-    - server
-  ports:
-    - '3000'
-  restart: on-failure
-dashboard:
-  image: 'cyberkronos/social-trading-dashboard:latest'
-  links:
-    - server
-  ports:
-    - '8080'
-  restart: on-failure
 server:
   image: 'cyberkronos/social-trading-server:latest'
   links:

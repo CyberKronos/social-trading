@@ -1,30 +1,6 @@
 version: "2"
 
 services:
-  dashboard:
-    build: ./dashboard
-    command: npm run prod -s
-    volumes:
-     - ./dashboard:/usr/src/app
-    container_name: social-trading-dashboard
-    ports:
-      - "8080:8080"
-    networks:
-      - front-tier
-      - back-tier
-
-  client:
-    build: ./client
-    command: npm start
-    volumes:
-     - ./client:/usr/src/app
-    container_name: social-trading-client
-    ports:
-      - "3000:3000"
-    networks:
-      - front-tier
-      - back-tier
-
   server:
     build: ./server
     command: npm start

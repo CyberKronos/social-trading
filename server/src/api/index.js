@@ -2,10 +2,8 @@ import { version } from '../../package.json';
 import { Router } from 'express';
 import facets from './facets';
 import config from '../config.json';
-import AdminServices from './admin-services'
-import ClientServices from './client-services'
+import services from './services'
 import firebase from 'firebase';
-import passport from 'passport';
 
 export default ({ config, db }) => {
 	let api = Router();
@@ -18,48 +16,11 @@ export default ({ config, db }) => {
 	});
 
 	/**
-	 * Client API
-	 */
-
-	/**
-	 * Redirect the user to Twitter for authentication. When complete, Twitter will redirect the user back to the application at
- 	 * /auth/twitter/callback
-	 */
-	api.get('/auth/twitter', passport.authenticate('twitter'));
-
-	/**
-	 * Twitter will redirect the user to this URL after approval.
-	 * Finish the authentication process by attempting to obtain an access token.
-	 * If access was granted, the user will be logged in.
-	 * Otherwise, authentication has failed.
-	 * @type {String}
-	 */
-	api.get('/auth/twitter/callback',
-		passport.authenticate('twitter', { failureRedirect: '/login' }),
-  	function(req, res) {
-    	// Successful authentication
-    	return res.redirect('/');
-  	});
-
-	api.get('/auth/instagram', passport.authenticate('instagram'));
-
-	api.get('/auth/instagram/callback',
-	  passport.authenticate('instagram', { failureRedirect: '/login' }),
-	  function(req, res) {
-	    // Successful authentication, redirect home.
-			return res.redirect('/');
-	  });
-
-	/**
-	 * Admin API
-	 */
-
-	/**
 	 * Creates Account Kues for Trading
 	 * @type {Array}
 	 */
   api.get('/createAccountQueues', (req, res) => {
-		Promise.resolve(AdminServices.getAccounts())
+		Promise.resolve(services.getAccounts())
     .then(function(dataSnapshot) {
 			let accs = [];
 
@@ -67,9 +28,9 @@ export default ({ config, db }) => {
         accs.push(childSnapshot.key);
       });
 
-			let randomizedAccs = AdminServices.shuffle(accs);
-			let groups = AdminServices.createTradeGroups(randomizedAccs);
-			AdminServices.createAccountKues(groups);
+			let randomizedAccs = services.shuffle(accs);
+			let groups = services.createTradeGroups(randomizedAccs);
+			services.createAccountKues(groups);
 
 			return res.json({ 'status' : 'Account Kues have been created' });
     });
@@ -80,16 +41,16 @@ export default ({ config, db }) => {
 	 * @type {[type]}
 	 */
 	api.get('/startTrading', (req, res) => {
-		Promise.resolve(AdminServices.getActiveTrades())
+		Promise.resolve(services.getActiveTrades())
     .then(function(snapshot) {
       snapshot.forEach(function(childSnapshot) {
         let accountKey = childSnapshot.key;
 
-				Promise.resolve(AdminServices.getAccountTradeNum(accountKey))
+				Promise.resolve(services.getAccountTradeNum(accountKey))
 				.then(function(snapshot) {
 					let numTrades = snapshot.numChildren();
 
-					AdminServices.processAllKues(accountKey, numTrades);
+					services.processAllKues(accountKey, numTrades);
 				});
       });
 			return res.json({ 'status' : 'Trading has started!' });
@@ -101,12 +62,12 @@ export default ({ config, db }) => {
 	 * @type GET
 	 */
   api.get('/deleteAllActiveTrades', (req, res) => {
-    Promise.resolve(AdminServices.getActiveTrades())
+    Promise.resolve(services.getActiveTrades())
     .then(function(snapshot) {
       const allTradeLists = snapshot.val();
 
       for (let accountKey in allTradeLists) {
-				AdminServices.deleteAllActiveTrades(accountKey);
+				services.deleteAllActiveTrades(accountKey);
       }
 
       return res.json({'status' : 'All active trades deleted'});
