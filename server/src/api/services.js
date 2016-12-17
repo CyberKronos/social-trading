@@ -8,7 +8,6 @@ const firebaseConfig = {
 	authDomain: config.firebase.authDomain,
 	databaseURL: config.firebase.databaseURL
 };
-
 firebase.initializeApp(firebaseConfig);
 
 /**
@@ -34,9 +33,9 @@ function setupAccountKue(accountKey, ranTradeGroup) {
     jobTimeStart += 60000;
 
     let job = queue.create(accountKey, {
-        title: 'Trading with: ' + ranTradeGroup[i],
-        accountKey: accountKey,
-        tradeAccountKey: ranTradeGroup[i]
+	    title: 'Trading with: ' + ranTradeGroup[i],
+	    accountKey: accountKey,
+	    tradeAccountKey: ranTradeGroup[i]
     })
     .delay(jobTimeStart) // 20 mins
     .attempts(2)
@@ -134,7 +133,7 @@ module.exports = {
 
         let postData = {};
         for (var i = 0; i < ranTradeGroup.length; ++i) {
-          postData[ranTradeGroup[i]] = i;
+          postData[i] = ranTradeGroup[i];
         }
 
         // Save in database
@@ -150,62 +149,57 @@ module.exports = {
 
   /**
    * [processAllKues description]
-   * @param  {[type]} accountKey [description]
-   * @param  {[type]} numTrades  [description]
-   * @return {[type]}            [description]
+   * @param  {[type]} accountKey       [description]
+   * @param  {[type]} tradeList [description]
+   * @param  {[type]} numTrades        [description]
+   * @return {[type]}                  [description]
    */
-  processAllKues: function(accountKey, numTrades) {
+  processAllKues: function(accountKey, tradeList, numTrades) {
     console.log(accountKey);
+		console.log(tradeList);
     console.log(numTrades);
-    let queue = kue.createQueue();
-    queue.process(accountKey, numTrades, function(job, done){
-      // Execute job
-      // if(!isValidEmail(address)) {
-      //   return done(new Error('invalid to address'));
-      // }
-
-      // TODO: Make sure private functions are being called in promise.
-      Promise.all([getAccountOAuth(job.data.accountKey), getAccountSpotKey(job.data.tradeAccountKey)])
-      .then(function(snapshot) {
-        let oauthData = snapshot[0].val();
-        let spotKey = snapshot[1].val();
-        if (spotKey != null) {
-          spotKey = Object.keys(spotKey);
-        }
-
-        console.log(oauthData);
-        console.log(spotKey);
-        console.log("");
-        done();
-      });
-    });
+    // let queue = kue.createQueue();
+    // queue.process(accountKey, numTrades, function(job, done){
+    //   // Execute job
+    //   // if(!isValidEmail(address)) {
+    //   //   return done(new Error('invalid to address'));
+    //   // }
+		//
+    //   // TODO: Make sure private functions are being called in promise.
+    //   Promise.all([getAccountOAuth(job.data.accountKey), getAccountSpotKey(job.data.tradeAccountKey)])
+    //   .then(function(snapshot) {
+    //     let oauthData = snapshot[0].val();
+    //     let spotKey = snapshot[1].val();
+    //     if (spotKey != null) {
+    //       spotKey = Object.keys(spotKey);
+    //     }
+		//
+    //     console.log(oauthData);
+    //     console.log(spotKey);
+    //     console.log("");
+    //     done();
+    //   });
+    // });
   },
 
   /**
-   * [Queries firebase to get all active trades or in a specified category]
-   * @param  {[type]} category (optional) [string]
+   * [Queries firebase to get all active trades from all categories]
    * @return {[type]}                     [void]
    */
-  getActiveTrades: function(category) {
+  getActiveTrades: function() {
     const ref = firebase.database().ref("activeTrades");
-    if (category) {
-      return ref.orderByChild("accCategory").equalTo(category).once("value", function(snapshot) {
-        return snapshot;
-      });
-    } else {
-      return ref.once("value", function(snapshot) {
-        return snapshot;
-      });
-    }
+		return ref.once("value", function(snapshot) {
+			return snapshot;
+		});
   },
 
   /**
-   * [queryAccounts description]
+   * [getSocialAccounts description]
    * @param  {[type]} category (optional) [string]
    * @return {[type]}                     [description]
    */
-  getAccounts: function(category) {
-    const ref = firebase.database().ref("accounts");
+  getSocialAccounts: function(category) {
+    const ref = firebase.database().ref("socialAccounts");
     if (category) {
       return ref.orderByChild("accCategory").equalTo(category).once("value", function (snapshot) {
         return snapshot;
@@ -218,11 +212,11 @@ module.exports = {
   },
 
   /**
-   * [getAccountTradeNum description]
+   * [getSocialAccountTradeNum description]
    * @param  {[type]} accountKey [description]
    * @return {[type]}            [description]
    */
-  getAccountTradeNum: function(accountKey) {
+  getSocialAccountTradeNum: function(accountKey) {
     const ref = firebase.database().ref("activeTrades/" + accountKey + "/trades/");
     return ref.once("value", function (snapshot) {
       return snapshot;

@@ -20,7 +20,7 @@ export default ({ config, db }) => {
 	 * @type {Array}
 	 */
   api.get('/createAccountQueues', (req, res) => {
-		Promise.resolve(services.getAccounts())
+		Promise.resolve(services.getSocialAccounts())
     .then(function(dataSnapshot) {
 			let accs = [];
 
@@ -46,11 +46,12 @@ export default ({ config, db }) => {
       snapshot.forEach(function(childSnapshot) {
         let accountKey = childSnapshot.key;
 
-				Promise.resolve(services.getAccountTradeNum(accountKey))
+				Promise.resolve(services.getSocialAccountTradeNum(accountKey))
 				.then(function(snapshot) {
 					let numTrades = snapshot.numChildren();
+					let tradeList = snapshot.val();
 
-					services.processAllKues(accountKey, numTrades);
+					services.processAllKues(accountKey, tradeList, numTrades);
 				});
       });
 			return res.json({ 'status' : 'Trading has started!' });
